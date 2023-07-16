@@ -4,8 +4,8 @@
 
 use core::panic::PanicInfo;
 use lazy_static::lazy_static;
+use rust_os::{exit_qemu, serial_print, serial_println, QemuExitCode};
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use rust_os::{exit_qemu, QemuExitCode, serial_println, serial_print};
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
@@ -14,6 +14,7 @@ pub extern "C" fn _start() -> ! {
     rust_os::gdt::init();
     init_test_idt();
 
+    // Trigger a stack overflow
     stack_overflow();
 
     panic!("Execution continued after stack overflow");
@@ -21,13 +22,8 @@ pub extern "C" fn _start() -> ! {
 
 #[allow(unconditional_recursion)]
 fn stack_overflow() {
-    stack_overflow();
-    volatile::Volatile::new(0).read();
-}
-
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    rust_os::test_panic_handler(info)
+    stack_overflow(); // For each recursion, the return address is pushed to the stack
+    volatile::Volatile::new(0).read(); // Prevent tail recursion optimizations
 }
 
 lazy_static! {
@@ -54,4 +50,9 @@ extern "x86-interrupt" fn test_double_fault_handler(
     serial_println!("[ok]");
     exit_qemu(QemuExitCode::Success);
     loop {}
+}
+
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    rust_os::test_panic_handler(info)
 }

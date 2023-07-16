@@ -28,4 +28,3 @@ fn panic(info: &PanicInfo) -> ! {
 fn test_println() {
     println!("test_println output");
 }
-

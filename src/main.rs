@@ -13,22 +13,18 @@ pub extern "C" fn _start() -> ! {
 
     rust_os::init();
 
-    unsafe {
-        *(0xdeadbe00 as *mut u64) = 42;
-    }
-
     #[cfg(test)]
     test_main();
 
     println!("It did not crash!");
-    loop {}
+    rust_os::hlt_loop();
 }
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     println!("{}", _info);
-    loop {}
+    rust_os::hlt_loop();
 }
 
 #[cfg(test)]
@@ -37,3 +33,7 @@ fn panic(info: &PanicInfo) -> ! {
     rust_os::test_panic_handler(info);
 }
 
+#[test_case]
+fn trivial_assertion() {
+    assert_eq!(1, 1);
+}
